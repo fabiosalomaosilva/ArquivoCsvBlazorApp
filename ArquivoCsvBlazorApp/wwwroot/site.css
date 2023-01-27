@@ -1,0 +1,30 @@
+﻿body {
+    background-color: #f0f1f5;
+}
+
+.app {
+    width: 100%;
+    height: 100vh;
+}
+
+.container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: center;
+    align-items: center
+}
+
+.card-form {
+    max-width: 500px;
+}
+
+
+
+@media (max-width: 500px) {
+    .card-form {
+        max-width: 350px;
+    }
+}

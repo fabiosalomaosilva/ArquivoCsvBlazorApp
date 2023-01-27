@@ -1,0 +1,177 @@
+﻿@page "/"
+@using ArquivoCsvBlazorApp.Generator
+@using System.Globalization
+@using System.Text
+@using CsvHelper
+@using CsvHelper.Configuration
+@inject IJSRuntime JS
+
+<PageTitle>Gerar arquivo CSV</PageTitle>
+
+<div class="card-form">
+    <MudPaper Elevation="3" Class="pa-16">
+        <MudText Typo="Typo.h5" GutterBottom="true" Class="mb-10">Olá, gere seu arquivo CSV para teste no COC!</MudText>
+        <MudForm>
+            <MudTextField @bind-Value="Quantity" Immediate="true" Label="Quantidade de registros" InputMode="InputMode.tel" InputType="InputType.Number" />
+            <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Info" Class="mt-7" Style="width: 100%" @onclick="Generate">Criar</MudButton>
+        </MudForm>
+    </MudPaper>
+</div>
+<br />
+<h3>Teste de paineis seletores</h3>
+<MudGrid Style="Width: 90%;">
+    <MudItem xs="12" sm="5">
+        <MudPaper>
+            <MudList Clickable="true" @bind-SelectedItem="selectedItemLeft" @bind-SelectedValue="ItemListaEsquerda" Style="height: 260px;overflow-y: auto">
+                @{
+                    foreach (var item in ListaEsquerda)
+                    {
+                        <MudListItem Text="@item" Value="@item" />
+                    }
+                }
+            </MudList>
+        </MudPaper>
+    </MudItem>
+    <MudItem xs="12" sm="1" Style="display: flex; flex-direction: column; align-items: center; margin: 10px;">
+        <div style="display: flex; flex-direction: row; gap: 10px;">
+            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowLeft" OnClick="@AddInListLeft" />
+            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowRight" OnClick="@AddInListRigth" />
+        </div>
+    </MudItem>
+
+    <MudItem xs="12" sm="5">
+        <MudPaper>
+            <MudList Clickable="true" @bind-SelectedItem="selectedItemRigth" @bind-SelectedValue="ItemListaDireita" Style="height: 260px;overflow-y: auto">
+                @{
+                    foreach (var item in ListaDireita)
+                    {
+                        <MudListItem Text="@item" Value="@item" />
+                    }
+                }
+            </MudList>
+        </MudPaper>
+    </MudItem>
+
+</MudGrid>
+
+
+
+@code
+{
+    public long? Quantity { get; set; }
+
+    private List<CsvFile> ListRows;
+
+    public List<string> ListaEsquerda { get; set; }
+    public List<string> ListaDireita { get; set; }
+
+    MudListItem selectedItemLeft;
+    object ItemListaEsquerda;
+
+    MudListItem selectedItemRigth;
+    object ItemListaDireita;
+
+    protected async void Generate()
+    {
+        var random = new Random();
+        var generation = new NumberGenerator();
+        ListRows = new List<CsvFile>();
+
+
+        try
+        {
+            for (var i = 0; i < Quantity; i++)
+            {
+                var qtdArrays = random.Next(1, 5);
+                var listRest = new List<int>();
+                var listGrau = new List<int>();
+                for (var rg = 0; rg < qtdArrays; rg++)
+                {
+                    listRest.Add(random.Next(1, 300));
+                    listGrau.Add(random.Next(1, 300));
+                }
+
+                var personType = random.Next(1, 2);
+                var cadastro = personType == 1 ? generation.CpfSemMascara(1) : generation.CnpjSemMascara(1);
+                var filial = personType == 1 ? 0 : Convert.ToInt64((cadastro[8..])[..2]);
+                var row = new CsvFile(
+                    Convert.ToInt64(cadastro[..9]),
+                    filial,
+                    Convert.ToInt64(cadastro[9..]),
+                    Convert.ToInt64(cadastro),
+                    personType,
+                    string.Join(",", listRest),
+                    string.Join(",", listGrau)
+                    );
+                ListRows.Add(row);
+            }
+
+            var configCsv = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    Delimiter = ";"
+                };
+
+            using var memoryStream = new MemoryStream();
+            await using var writer = new StreamWriter(memoryStream);
+            await using (var csv = new CsvWriter(writer, configCsv, false))
+            {
+                await csv.WriteRecordsAsync(ListRows);
+            }
+            var arr = memoryStream.ToArray();
+            await JS.InvokeVoidAsync("saveAsFile", "file.csv", Convert.ToBase64String(arr));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
+    }
+    protected override void OnInitialized()
+    {
+        ListaEsquerda = new List<string>
+        {
+            "Item 01",
+            "Item 02",
+            "Item 03",
+            "Item 04",
+            "Item 05",
+            "Item 06",
+            "Item 07",
+            "Item 08",
+            "Item 09",
+            "Item 10"
+        };
+        ListaDireita = new List<string>();
+    }
+
+    void AddInListRigth()
+    {
+        if (ItemListaEsquerda == null) return;
+        var itemListaEsquerda = ItemListaEsquerda.ToString();
+        ListaDireita.Add(itemListaEsquerda);
+        ListaEsquerda.Remove(itemListaEsquerda);
+        itemListaEsquerda = null;
+        LimparDados();
+        StateHasChanged();
+    }
+
+    void AddInListLeft()
+    {
+        if (ItemListaDireita == null) return;
+        var itemListaDireita = ItemListaDireita.ToString();
+        ListaEsquerda.Add(itemListaDireita);
+        ListaDireita.Remove(itemListaDireita);
+        itemListaDireita = null;
+        LimparDados();
+        StateHasChanged();
+    }
+
+    void LimparDados()
+    {
+        selectedItemLeft = null;
+        selectedItemRigth = null;
+        ItemListaEsquerda = null;
+        ItemListaDireita = null;
+    }
+}
