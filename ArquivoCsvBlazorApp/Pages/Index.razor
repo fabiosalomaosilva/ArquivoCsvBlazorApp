@@ -19,7 +19,7 @@
 </div>
 <br />
 <h3>Teste de paineis seletores</h3>
-<MudGrid Style="Width: 90%;">
+<MudGrid>
     <MudItem xs="12" sm="5">
         <MudPaper>
             <MudList Clickable="true" @bind-SelectedItem="selectedItemLeft" @bind-SelectedValue="ItemListaEsquerda" Style="height: 260px;overflow-y: auto">
@@ -32,7 +32,7 @@
             </MudList>
         </MudPaper>
     </MudItem>
-    <MudItem xs="12" sm="1" Style="display: flex; flex-direction: column; align-items: center; margin: 10px;">
+    <MudItem xs="12" sm="2" Style="display: flex; flex-direction: column; align-items: center;">
         <div style="display: flex; flex-direction: row; gap: 10px;">
             <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowLeft" OnClick="@AddInListLeft" />
             <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowRight" OnClick="@AddInListRigth" />
@@ -50,6 +50,29 @@
                 }
             </MudList>
         </MudPaper>
+    </MudItem>
+    <MudItem xl="12" md="12" xs="12">
+
+        <MudTable Items="@Elements.Take(4)" 
+                  Hover="true" 
+                  Breakpoint="Breakpoint.Sm" 
+                  @ref="mudTable">
+            <HeaderContent>
+                <MudTh>Nr</MudTh>
+                <MudTh>Sign</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Position</MudTh>
+                <MudTh>Molar mass</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nr">@context.Number</MudTd>
+                <MudTd DataLabel="Sign">@context.Sign</MudTd>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Position">@context.Position</MudTd>
+                <MudTd DataLabel="Molar mass">@context.Molar</MudTd>
+            </RowTemplate>
+        </MudTable>
+
     </MudItem>
 
 </MudGrid>
@@ -173,5 +196,24 @@
         selectedItemRigth = null;
         ItemListaEsquerda = null;
         ItemListaDireita = null;
+    }
+
+    private int selectedRowNumber = -1;
+    private MudTable<Element> mudTable;
+    private List<string> clickedEvents = new();
+    private IEnumerable<Element> Elements = new List<Element>()
+    {
+        new Element() { Number = 1, Sign = "H", Name = "Hydrogen", Position = 0, Molar = 1.00794 },
+        new Element() { Number = 2, Sign = "He", Name = "Helium", Position = 17, Molar = 4.002602 },
+        new Element() { Number = 3, Sign = "Li", Name = "Lithium", Position = 0, Molar = 6.941 }
+    };
+
+    class Element
+    {
+        public int Number { get; set; }
+        public string Sign { get; set; }
+        public string Name { get; set; }
+        public int Position { get; set; }
+        public double Molar { get; set; }
     }
 }
