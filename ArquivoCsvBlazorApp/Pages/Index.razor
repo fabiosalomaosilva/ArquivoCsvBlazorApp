@@ -5,6 +5,7 @@
 @using CsvHelper
 @using CsvHelper.Configuration
 @inject IJSRuntime JS
+@inject HttpClient HttpClient
 
 <PageTitle>Gerar arquivo CSV</PageTitle>
 
@@ -19,7 +20,7 @@
 </div>
 <br />
 <h3>Teste de paineis seletores</h3>
-<MudGrid>
+<MudGrid Style="padding: 50px">
     <MudItem xs="12" sm="5">
         <MudPaper>
             <MudList Clickable="true" @bind-SelectedItem="selectedItemLeft" @bind-SelectedValue="ItemListaEsquerda" Style="height: 260px;overflow-y: auto">
@@ -53,24 +54,38 @@
     </MudItem>
     <MudItem xl="12" md="12" xs="12">
 
-        <MudTable Items="@Elements.Take(4)" 
-                  Hover="true" 
-                  Breakpoint="Breakpoint.Sm" 
-                  @ref="mudTable">
+        <MudTable Items="@ListTodos"
+                  TItem="Todo" IsLoading="isLoading"
+                  PageSize="pageSize"
+                  CurrentPage="currentPage"
+                  PageChange="OnPageChange"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm"
+                  @ref="mudTable"
+                  Style="padding: 15px">
             <HeaderContent>
-                <MudTh>Nr</MudTh>
-                <MudTh>Sign</MudTh>
-                <MudTh>Name</MudTh>
-                <MudTh>Position</MudTh>
-                <MudTh>Molar mass</MudTh>
+                <MudTh>ID</MudTh>
+                <MudTh>UserId</MudTh>
+                <MudTh>Title</MudTh>
+                <MudTh>Completed</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Nr">@context.Number</MudTd>
-                <MudTd DataLabel="Sign">@context.Sign</MudTd>
-                <MudTd DataLabel="Name">@context.Name</MudTd>
-                <MudTd DataLabel="Position">@context.Position</MudTd>
-                <MudTd DataLabel="Molar mass">@context.Molar</MudTd>
+                <MudTd DataLabel="Nr">@context.Id</MudTd>
+                <MudTd DataLabel="Sign">@context.UserId</MudTd>
+                <MudTd DataLabel="Name">@context.Title</MudTd>
+                <MudTd DataLabel="Position">@context.Completed</MudTd>
             </RowTemplate>
+            <LoadingContent>
+                <MudText>Carregando...</MudText>
+            </LoadingContent>
+            <PagerContent>
+                <MudPagination 
+                    Color="Color.Tertiary"
+                    Style="margin-top: 10px;"
+                    SelectedChanged="OnPageChange"
+                               Count="@count"
+                                />
+            </PagerContent>
         </MudTable>
 
     </MudItem>
@@ -84,6 +99,7 @@
     public long? Quantity { get; set; }
 
     private List<CsvFile> ListRows;
+    private List<Todo>? ListTodos;
 
     public List<string> ListaEsquerda { get; set; }
     public List<string> ListaDireita { get; set; }
@@ -93,6 +109,56 @@
 
     MudListItem selectedItemRigth;
     object ItemListaDireita;
+
+    private int count = 0;
+    private int pageSize = 10;
+    private int currentPage = 1;
+    private bool isLoading = false;
+
+
+    protected override async Task OnInitializedAsync()
+    { 
+        isLoading = true;
+        ListaEsquerda = new List<string>
+    {
+        "Item 01",
+        "Item 02",
+        "Item 03",
+        "Item 04",
+        "Item 05",
+        "Item 06",
+        "Item 07",
+        "Item 08",
+        "Item 09",
+        "Item 10"
+    };
+        ListaDireita = new List<string>();
+
+        var listCount = await HttpClient.GetFromJsonAsync<List<Todo>>($"todos");
+        count = listCount.Count;
+        ListTodos = await HttpClient.GetFromJsonAsync<List<Todo>>($"todos?_limit={pageSize}&_page={currentPage}");
+        isLoading = false;
+
+    }
+    private async Task LoadData()
+    {
+        isLoading = true;
+        var startIndex = (currentPage - 1) * pageSize;
+        var endIndex = startIndex + pageSize;
+        if (endIndex > count)
+        {
+            endIndex = count;
+        }
+        ListTodos = await HttpClient.GetFromJsonAsync<List<Todo>>($"todos?_limit={pageSize}&_page={currentPage}");
+        await InvokeAsync(() => StateHasChanged());
+        isLoading = false;
+    }
+
+    private async Task OnPageChange(int current)
+    {
+        currentPage = current;
+        await LoadData();
+    }
 
     protected async void Generate()
     {
@@ -150,23 +216,7 @@
         }
 
     }
-    protected override void OnInitialized()
-    {
-        ListaEsquerda = new List<string>
-        {
-            "Item 01",
-            "Item 02",
-            "Item 03",
-            "Item 04",
-            "Item 05",
-            "Item 06",
-            "Item 07",
-            "Item 08",
-            "Item 09",
-            "Item 10"
-        };
-        ListaDireita = new List<string>();
-    }
+
 
     void AddInListRigth()
     {
@@ -199,7 +249,7 @@
     }
 
     private int selectedRowNumber = -1;
-    private MudTable<Element> mudTable;
+    private MudTable<Todo> mudTable;
     private List<string> clickedEvents = new();
     private IEnumerable<Element> Elements = new List<Element>()
     {
@@ -215,5 +265,13 @@
         public string Name { get; set; }
         public int Position { get; set; }
         public double Molar { get; set; }
+    }
+
+    class Todo
+    {
+        public int UserId { get; set; }
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public bool Completed { get; set; }
     }
 }
