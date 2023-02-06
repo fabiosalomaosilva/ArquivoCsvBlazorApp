@@ -55,10 +55,9 @@
     <MudItem xl="12" md="12" xs="12">
 
         <MudTable Items="@ListTodos"
-                  TItem="Todo" IsLoading="isLoading"
-                  PageSize="pageSize"
+                  Loading="isLoading"                  
+                  RowsPerPage="pageSize"
                   CurrentPage="currentPage"
-                  PageChange="OnPageChange"
                   Hover="true"
                   Breakpoint="Breakpoint.Sm"
                   @ref="mudTable"
@@ -113,7 +112,7 @@
     private int count = 0;
     private int pageSize = 10;
     private int currentPage = 1;
-    private bool isLoading = false;
+    public bool isLoading = false;
 
 
     protected override async Task OnInitializedAsync()
@@ -133,9 +132,9 @@
         "Item 10"
     };
         ListaDireita = new List<string>();
-
+        ListTodos = new List<Todo>();
         var listCount = await HttpClient.GetFromJsonAsync<List<Todo>>($"todos");
-        count = listCount.Count;
+        count = listCount.Count / pageSize;
         ListTodos = await HttpClient.GetFromJsonAsync<List<Todo>>($"todos?_limit={pageSize}&_page={currentPage}");
         isLoading = false;
 
@@ -143,6 +142,7 @@
     private async Task LoadData()
     {
         isLoading = true;
+
         var startIndex = (currentPage - 1) * pageSize;
         var endIndex = startIndex + pageSize;
         if (endIndex > count)
